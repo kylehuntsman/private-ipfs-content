@@ -10,6 +10,8 @@ import pipe from "it-pipe";
 import { Connection } from "libp2p/src/connection-manager";
 // import {map} from 'streaming-iterables';
 // import {toBuffer} from 'it-buffer';
+// import IPFS from "ipfs-core";
+const IPFS = require('ipfs-core')
 
 // Known peers addresses
 const bootstrapMultiaddrs = [
@@ -42,6 +44,10 @@ const main = async () => {
     },
   });
 
+  const libp2pFactory = () => {
+    return Promise.resolve(node);
+  };
+
   const addr = process.argv[2] || "null";
 
   const protocol = process.argv[3] || "none";
@@ -64,7 +70,7 @@ const main = async () => {
 
   node.on("peer:discovery", (peer) => {
     // console.log("Discovered %s", peer.id.toB58String()); // Log discovered peer
-    console.log(peer, peer.id);
+    // console.log(peer, peer.id);
   });
 
   node.connectionManager.on("peer:connect", async (connection: Connection) => {
@@ -134,8 +140,6 @@ const main = async () => {
     console.log(`${addr.toString()}/p2p/${node.peerId.toB58String()}`);
   });
 
-  await sleep(3000);
-  console.log(node.connections);
 
   //   await sleep(100000);
 
@@ -143,15 +147,43 @@ const main = async () => {
   //   await node.stop();
   //   console.log("libp2p has stopped");
 
+  const ipfsNode = await IPFS.create({
+    libp2p: libp2pFactory,
+  });
+
+  // Lets log out the number of peers we have every 2 seconds
+  setInterval(async () => {
+    try {
+      const peers = await ipfsNode.swarm.peers();
+      console.log(`The node now has ${peers.length} peers.`);
+      console.log(peers)
+    } catch (err) {
+      console.log("An error occurred trying to check our peers:", err);
+    }
+  }, 2000);
+
+  // Log out the bandwidth stats every 4 seconds so we can see how our configuration is doing
+  setInterval(async () => {
+    try {
+      const stats = await ipfsNode.stats.bw();
+      console.log(`\nBandwidth Stats: ${JSON.stringify(stats, null, 2)}\n`);
+    } catch (err) {
+      console.log("An error occurred trying to check our stats:", err);
+    }
+  }, 4000);
+
   const stop = async () => {
-    // stop libp2p
+    await ipfsNode.stop();
     await node.stop();
-    console.log("libp2p has stopped");
+    console.log("stopped");
     process.exit(0);
   };
 
   process.on("SIGTERM", stop);
   process.on("SIGINT", stop);
+
+  await sleep(3000);
+  console.log(node.connections);
 };
 
 main();
