@@ -43,6 +43,8 @@ const main = async () => {
   // Create whitelist and add CIDs to whitelist
   const cidWhitelist = new Map();
 
+  cidWhitelist.set(cid1.toString(), new Set());
+
   // Register a bitswap block:get handler that interceps the request and determines if the node will give the block to it's peer
   // @ts-ignore
   ipfsNode.bitswap.register(
@@ -57,6 +59,11 @@ const main = async () => {
 
       console.log("cidWhitelist:", cidWhitelist);
       const hasCID = cidWhitelist.has(cidStr);
+
+      if (!hasCID) {
+        return true; // public by default
+      }
+
       const peerIsAllowed = cidWhitelist.get(cidStr)?.has(peerStr) || false;
 
       console.log("Does whitelist have cid?", hasCID);
