@@ -1,6 +1,7 @@
 const { createLibp2p } = require("./libp2p");
-const { Multiaddr } = require('multiaddr');
-const IPFS = require('ipfs-core');
+const { Multiaddr } = require("multiaddr");
+const IPFS = require("ipfs-core");
+const PeerID = require("peer-id");
 
 global.MAGIC_HANDLER_FUNCTIONS = new Map();
 

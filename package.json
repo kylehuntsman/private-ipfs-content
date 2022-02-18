@@ -9,9 +9,9 @@
     "typescript": "^4.5.5"
   },
   "scripts": {
-    "main": "ts-node ./src/main.ts",
+    "main": "IPFS_REPO=./tmp/main_node ts-node ./src/main.ts",
     "node": "node ./src/node.js",
-    "peer": "node ./src/peer.js"
+    "peer": "IPFS_REPO=./tmp/peer_node node ./src/peer.js"
   },
   "dependencies": {
     "ipfs-core": "^0.14.1",

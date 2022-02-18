@@ -1,181 +1,92 @@
-import Libp2p from "libp2p";
-import TCP from "libp2p-tcp";
-import { NOISE } from "libp2p-noise";
-// import { default as MPlex, Mplex } from 'libp2p-mplex'
-const MPLEX = require("libp2p-mplex");
-import Bootstrap from "libp2p-bootstrap";
-import { multiaddr } from "multiaddr";
 import process from "process";
-import pipe from "it-pipe";
-import { Connection } from "libp2p/src/connection-manager";
-// import {map} from 'streaming-iterables';
-// import {toBuffer} from 'it-buffer';
-// import IPFS from "ipfs-core";
-const IPFS = require('ipfs-core')
+const { sleep } = require("./util");
+const IPFS = require("./ipfs-wrapper");
+import { CID } from "multiformats/cid";
+import PeerId from "peer-id";
+import { makeAuthServer } from "./server";
+import { IPFS as IPFSCore } from "ipfs-core";
+import globSource from "ipfs-utils/src/files/glob-source.js";
+import all from "it-all";
 
-// Known peers addresses
-const bootstrapMultiaddrs = [
-  "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
-  "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
-];
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const PORT = 8181;
 
 const main = async () => {
-  const node = await Libp2p.create({
-    addresses: {
-      // add a listen address (localhost) to accept TCP connections on a random port
-      listen: ["/ip4/127.0.0.1/tcp/0"],
-    },
-    modules: {
-      transport: [TCP],
-      connEncryption: [NOISE],
-      streamMuxer: [MPLEX],
-      peerDiscovery: [Bootstrap],
-    },
-    config: {
-      peerDiscovery: {
-        autoDial: true,
-        [Bootstrap.tag]: {
-          enabled: true,
-          list: bootstrapMultiaddrs,
-        },
-      },
-    },
+  const mainPeerId = require("../peers/main.json");
+  // Create the node
+  const ipfsNode: IPFSCore = await IPFS.create(undefined, {
+    peerId: mainPeerId,
   });
 
-  const libp2pFactory = () => {
-    return Promise.resolve(node);
-  };
+  const result = await all(ipfsNode.addAll(globSource("./", "demo/**/*")));
+  console.log("result:", result);
 
-  const addr = process.argv[2] || "null";
-
-  const protocol = process.argv[3] || "none";
-
-  if (process.argv.length >= 4) {
-    console.log(`adding protocol ${protocol}`);
-
-    node.handle(`${protocol}`, ({ stream }) => {
-      pipe(stream, (source) =>
-        (async function () {
-          for await (const msg of source) {
-            console.log("message for protocol:", protocol, msg.toString());
-          }
-        })()
-      );
-    });
-  } else {
-    console.log("no custom protocol given, skipping.");
-  }
-
-  node.on("peer:discovery", (peer) => {
-    // console.log("Discovered %s", peer.id.toB58String()); // Log discovered peer
-    // console.log(peer, peer.id);
+  // Add content to the node
+  const { cid: cid1 } = await ipfsNode.add({
+    content: `dear diary, today I feel d9db4b4b-1c1e-4553-81d9-4422db2508bc ${Date.now()}`,
+  }); // QmUBpaezsejgC7MTS9Ay8wJVstJ4WEoicQdjm3v25QmfZP
+  const { cid: cid2 } = await ipfsNode.add({
+    content: `Script: Toy Story 9817231231 ${Date.now()}`,
   });
 
-  node.connectionManager.on("peer:connect", async (connection: Connection) => {
-    console.log("Connected to %s", connection.remotePeer.toB58String()); // Log connected peer
-    // console.log(connection);
-    // console.log("protocol:", protocol);
-    // console.log("remote addr:", connection.remoteAddr);
-    // console.log("remote peer:", connection.remotePeer);
+  console.log("cid1:", cid1.toString());
+  console.log("cid2:", cid2.toString());
 
-    if (addr === "null") {
-      console.log("skip");
-      return;
-    }
+  console.log("---- test connecting with another peer: ----");
+  // @ts-ignore
+  ipfsNode.libp2p.multiaddrs.forEach((addr) => {
+    // @ts-ignore
+    const peerID = ipfsNode.libp2p.peerId.toB58String()
+    console.log(
+      `$ npm run peer ${addr.toString()}/p2p/${peerID} ${cid1.toString()}`
+    );
+  });
 
-    try {
-      const { stream } = await node.dialProtocol(
-        connection.remotePeer,
-        protocol
-      );
-      // const { stream } = await node.dialProtocol(connection.remoteAddr, protocol);
-      await pipe(["helloworld from custom protocol", stream]);
-      console.log(
-        "nice, it worked",
-        connection.remotePeer.toB58String(),
-        "supports our protocol"
-      );
-    } catch (err) {
+  // Whitelisting
+
+  // Create whitelist and add CIDs to whitelist
+  const cidWhitelist = new Map();
+
+  // Register a bitswap block:get handler that interceps the request and determines if the node will give the block to it's peer
+  // @ts-ignore
+  ipfsNode.bitswap.register(
+    "block:get",
+    ({ cid, peerId }: { cid: CID; peerId: PeerId }) => {
+      console.log(cid, typeof cid);
       // @ts-ignore
-      if (err.code === "ERR_UNSUPPORTED_PROTOCOL") {
-        console.error("OK not supported, close this connection");
-        await connection.close();
-      } else {
-        console.error(err);
+      const cidStr = cid.toString();
+      const peerStr = peerId.toB58String();
+
+      console.log(`peer: ${peerStr} tries to acces ${cidStr}`);
+
+      console.log("cidWhitelist:", cidWhitelist);
+      const hasCID = cidWhitelist.has(cidStr);
+      const peerIsAllowed = cidWhitelist.get(cidStr)?.has(peerStr) || false;
+
+      console.log("Does whitelist have cid?", hasCID);
+      console.log("Does whitelist have peerId?", peerIsAllowed);
+
+      if (!peerIsAllowed) {
+        console.log(`${peerStr} tried to access a private file ${cidStr},`);
+        console.log(
+          `visit: http://localhost:${PORT}/allow?cid=${cidStr}&addr=${peerStr} to give them access.`
+        );
       }
+
+      return peerIsAllowed;
     }
+  );
 
-    // connection.addStream(stream, {protocol})
-    // const {stream} = await node.dialProtocol(connection.remotePeer, [protocol])
-    // await pipe(
-    //     ['another stream on protocol (b)'],
-    //     stream3
-    //   )
+  // Create our authorization UI
+  const server = makeAuthServer(cidWhitelist);
+  server.listen(PORT);
 
-    //   connection.addStream(stream, {protocol})
-
-    // Do one thing right now, allow a connection IFF you speak my protocol.
-  });
-
-  await node.start();
-  console.log("libp2p has started");
-
-  // ping peer if received multiaddr
-  if (process.argv.length >= 3) {
-    if (addr !== "null") {
-      const ma = multiaddr(process.argv[2]);
-      console.log(`pinging remote peer at ${process.argv[2]}`);
-      const latency = await node.ping(ma);
-      console.log(`pinged ${process.argv[2]} in ${latency}ms`);
-    }
-  } else {
-    console.log("no remote peer address given, skipping ping");
-  }
-
-  // print out listening addresses
-  console.log("listening on addresses:");
-  node.multiaddrs.forEach((addr) => {
-    console.log(`${addr.toString()}/p2p/${node.peerId.toB58String()}`);
-  });
-
-
-  //   await sleep(100000);
-
-  //   // stop libp2p
-  //   await node.stop();
-  //   console.log("libp2p has stopped");
-
-  const ipfsNode = await IPFS.create({
-    libp2p: libp2pFactory,
-  });
-
-  // Lets log out the number of peers we have every 2 seconds
-  setInterval(async () => {
-    try {
-      const peers = await ipfsNode.swarm.peers();
-      console.log(`The node now has ${peers.length} peers.`);
-      console.log(peers)
-    } catch (err) {
-      console.log("An error occurred trying to check our peers:", err);
-    }
-  }, 2000);
-
-  // Log out the bandwidth stats every 4 seconds so we can see how our configuration is doing
-  setInterval(async () => {
-    try {
-      const stats = await ipfsNode.stats.bw();
-      console.log(`\nBandwidth Stats: ${JSON.stringify(stats, null, 2)}\n`);
-    } catch (err) {
-      console.log("An error occurred trying to check our stats:", err);
-    }
-  }, 4000);
-
+  // Clean up behing us
   const stop = async () => {
     await ipfsNode.stop();
-    await node.stop();
+    // @ts-ignore
+    await ipfsNode.libp2p.stop();
     console.log("stopped");
+    await new Promise((resolve) => server.close(resolve));
     process.exit(0);
   };
 
@@ -183,7 +94,6 @@ const main = async () => {
   process.on("SIGINT", stop);
 
   await sleep(3000);
-  console.log(node.connections);
 };
 
 main();
