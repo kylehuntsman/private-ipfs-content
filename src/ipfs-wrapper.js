@@ -60,30 +60,3 @@ async function create(peerMultiaddrStr, options = {}) {
 module.exports = {
   create
 }
-
-/*
-    // Add this code to ipfs-bitswap index
-    node_modules/ipfs-bitswap/cjs/src/decision-engine/index.js _processTasks() L:76
-    const blocks = await this._getBlocks(blockCids);
-    for (const [topic, taskData] of blockTasks) {
-      const cid$1 = cid.CID.parse(topic);
-
-      // Determine if the node will give the block to the asking peer
-      let willGive = true;
-      if(global.MAGIC_HANDLER_FUNCTIONS.has('block:get')) {
-        const func = global.MAGIC_HANDLER_FUNCTIONS.get('block:get');
-        willGive = await func({ cid, peerId });
-      }
-
-      const blk = blocks.get(topic);
-      if (blk && willGive) {
-        // console.log('_processTasks():: blk is not undefined');
-        msg.addBlock(cid$1, blk);
-      } else {
-        // console.log('_processTasks():: blk is undefined');
-        if (taskData.sendDontHave) {
-          msg.addDontHave(cid$1);
-        }
-      }
-    }
-  */

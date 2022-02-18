@@ -1,5 +1,14 @@
 # Private/Whitelisted Content on IPFS
 
+## Setup
+
+We are patching a part of the ipfs-core stack to demo our experiments.
+
+```
+yarn install
+git status # check the node_modules/ipfs-bitswap/cjs/src/decision-engine/index.js is not changed, that should be a patch version with a MAGIC variable.
+```
+
 ## Running
 
 Run the following command to run the main node, ensuring you copy the listening address it logs
