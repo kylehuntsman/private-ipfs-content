@@ -10,8 +10,8 @@
   },
   "scripts": {
     "main": "ts-node ./src/main.ts",
-    "node1": "node ./src/main.js 1 /custom-protocol",
-    "node2": "node ./src/main.js 2 /custom-protocol"
+    "node": "node ./src/node.js",
+    "peer": "node ./src/peer.js"
   },
   "dependencies": {
     "ipfs-core": "^0.14.1",

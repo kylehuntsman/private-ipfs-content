@@ -5,10 +5,10 @@ const MPLEX = require('libp2p-mplex');
 const Bootstrap = require('libp2p-bootstrap');
 
 // Known peers addresses
-const BOOTSTRAP_MULTIADDRS = [
-  "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
-  "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
-];
+// const BOOTSTRAP_MULTIADDRS = [
+//   "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
+//   "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
+// ];
 
 function createLibp2p() {
   return Libp2p.create({
@@ -20,17 +20,17 @@ function createLibp2p() {
       transport: [TCP],
       connEncryption: [NOISE],
       streamMuxer: [MPLEX],
-      peerDiscovery: [Bootstrap]
+      // peerDiscovery: [Bootstrap]
     },
-    config: {
-      peerDiscovery: {
-        autoDial: true,
-        [Bootstrap.tag]: {
-          enabled: true,
-          list: BOOTSTRAP_MULTIADDRS
-        }
-      }
-    }
+    // config: {
+    //   peerDiscovery: {
+    //     autoDial: true,
+    //     [Bootstrap.tag]: {
+    //       enabled: true,
+    //       list: BOOTSTRAP_MULTIADDRS
+    //     }
+    //   }
+    // }
   });
 }
 

@@ -2,9 +2,9 @@
 
 ## Running
 
-Run the following command to run node 1, ensuring you copy the listening peer address it logs
+Run the following command to run the main node, ensuring you copy the listening address it logs
 ```
-$ npm run node1
+$ npm run node
 
 adding protocol /custom-protocol
 libp2p has started
@@ -15,9 +15,9 @@ Swarm listening on /ip4/127.0.0.1/tcp/46659/p2p/12D3KooWBZR2WgrQdHUjU2tYGgpHUG3b
 Swarm listening on /ip4/127.0.0.1/tcp/44829/p2p/12D3KooWBZR2WgrQdHUjU2tYGgpHUG3bpywxTkGTBEezeV4iaSqS
 ```
 
-Then run the following command, using the copied peer address, to run node 2
+Then run the following command, using the copied peer address, to run the peer node
 ```
-$ npm run node2 <node-1-peer-address>
+$ npm run peer <node-1-peer-address> <cid-to-get>
 
 adding protocol /custom-protocol
 libp2p has started
