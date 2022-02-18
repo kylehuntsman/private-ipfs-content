@@ -11,11 +11,8 @@ import all from "it-all";
 const PORT = 8181;
 
 const main = async () => {
-  const mainPeerId = require("../peers/main.json");
   // Create the node
-  const ipfsNode: IPFSCore = await IPFS.create(undefined, {
-    peerId: mainPeerId,
-  });
+  const ipfsNode: IPFSCore = await IPFS.create();
 
   const result = await all(ipfsNode.addAll(globSource("./", "demo/**/*")));
   console.log("result:", result);
