@@ -11,33 +11,47 @@ git status # check the node_modules/ipfs-bitswap/cjs/src/decision-engine/index.j
 
 ## Running
 
-Run the following command to run the main node, ensuring you copy the listening address it logs
-```
-$ npm run node
+Run the following command to run the main node. It will print out the command to test the other side.
 
-adding protocol /custom-protocol
-libp2p has started
-no remote peer address given, skipping ping
-listening on addresses:
-/ip4/127.0.0.1/tcp/46659/p2p/QmUAwQjypBgXe9C16jN6na7ss6sp9Q7GVPoiHCUM6SSyzW <-- Copy this address
-Swarm listening on /ip4/127.0.0.1/tcp/46659/p2p/12D3KooWBZR2WgrQdHUjU2tYGgpHUG3bpywxTkGTBEezeV4iaSqS
-Swarm listening on /ip4/127.0.0.1/tcp/44829/p2p/12D3KooWBZR2WgrQdHUjU2tYGgpHUG3bpywxTkGTBEezeV4iaSqS
+```
+$ yarn run main
+
+...
+---- test connecting with another peer: ----
+$ npm run peer /ip4/127.0.0.1/tcp/55532/p2p/QmQQB5MDKat7GLgjNvA7NQXDxpjZ9CvvvHWKAHbv18ewmU QmTdVqWgrBMDdGdLJargx5FHvWHW7SzSLtnGjn1tKNjdoz
+...
 ```
 
-Then run the following command, using the copied peer address, to run the peer node
-```
-$ npm run peer <node-1-peer-address> <cid-to-get>
+Then run the other peer command.
 
-adding protocol /custom-protocol
-libp2p has started
-pinging remote peer at /ip4/127.0.0.1/tcp/39139/p2p/QmRxCYAzH31Z2GDp82MHwwqNeheM9oX9n3EvhjBUhYcbRh
-Connected to QmRxCYAzH31Z2GDp82MHwwqNeheM9oX9n3EvhjBUhYcbRh
-Connected to QmRxCYAzH31Z2GDp82MHwwqNeheM9oX9n3EvhjBUhYcbRh
-nice, it worked QmRxCYAzH31Z2GDp82MHwwqNeheM9oX9n3EvhjBUhYcbRh supports our protocol
-nice, it worked QmRxCYAzH31Z2GDp82MHwwqNeheM9oX9n3EvhjBUhYcbRh supports our protocol
-pinged /ip4/127.0.0.1/tcp/39139/p2p/QmRxCYAzH31Z2GDp82MHwwqNeheM9oX9n3EvhjBUhYcbRh in 6ms
-listening on addresses:
-/ip4/127.0.0.1/tcp/33589/p2p/QmTGBAMm2UXeAAptisJmch1Sj2WZ3Fro29m6sP1xsW5vHN
-Swarm listening on /ip4/127.0.0.1/tcp/33589/p2p/12D3KooWAeAufphmCmYcMFnpeEwiGjzvoFoUak5RAiyoQtCciijS
-Swarm listening on /ip4/127.0.0.1/tcp/45043/p2p/12D3KooWAeAufphmCmYcMFnpeEwiGjzvoFoUak5RAiyoQtCciijS
+It will try to access the data and fail:
+
+```
+$ npm run peer /ip4/127.0.0.1/tcp/55532/p2p/QmQQB5MDKat7GLgjNvA7NQXDxpjZ9CvvvHWKAHbv18ewmU QmTdVqWgrBMDdGdLJargx5FHvWHW7SzSLtnGjn1tKNjdoz
+
+...
+---- trying to load: QmTdVqWgrBMDdGdLJargx5FHvWHW7SzSLtnGjn1tKNjdoz ----
+---- could not retrieve file, giving up... ----
+...
+```
+
+The main node will print a message with an address to give access to this node
+
+```
+...
+NODE_ID tried to access a private file CID,
+visit: http://localhost:8181/allow?cid=QmTdVqWgrBMDdGdLJargx5FHvWHW7SzSLtnGjn1tKNjdoz&addr=12D3KooWHUwkRj59EEGFhNHCMiSZG52ki27ve3JMHHwJTbnTGqPk to give them access.
+...
+```
+
+If you visit this webpage, you will see the "access enable" message, then you can run the npm peer command again. Now the peer has access!
+
+```
+---- trying to load: QmTdVqWgrBMDdGdLJargx5FHvWHW7SzSLtnGjn1tKNjdoz ----
+---- Here is the file! ----
+>>> QmTdVqWgrBMDdGdLJargx5FHvWHW7SzSLtnGjn1tKNjdoz000644 000000 000000 00000000113 14203667502 017365 0ustar00000000 000000
+>>> dear diary, today I feel d9db4b4b-1c1e-4553-81d9-4422db2508bc 1645178536046
+>>>
+>>>
+---- Load complete! ----
 ```
